@@ -1,0 +1,70 @@
+# Frontend Deployment
+# Python/FastAPI application that orchestrates distributed agents
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: dmz
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      serviceAccountName: frontend-sa
+      containers:
+        - name: frontend
+          image: frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: WORKSPACE_PATH
+              value: "/workspace"
+            - name: AGENTS_NAMESPACE
+              value: "agents"
+            - name: AGENT_IMAGE
+              value: "agent-worker:latest"
+            - name: API_KEY_SECRET
+              value: "anthropic-api-key"
+            - name: PVC_NAME
+              value: "workspace-pvc"
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: anthropic-api-key
+                  key: api-key
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: workspace-pvc

@@ -1,0 +1,83 @@
+# Shared storage for git repositories and worktrees
+# Both frontend and agent pods mount this at /workspace
+#
+# IMPORTANT: ReadWriteMany (RWX) access mode is required for multi-pod access
+#
+# For minikube: Use hostPath PV or NFS provisioner
+# For AKS: Use Azure Files (supports RWX natively)
+# For EKS: Use EFS
+# For GKE: Use Filestore
+---
+# PersistentVolume for minikube/dev (hostPath-based)
+# For production, use your cloud provider's RWX storage class instead
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: workspace-pv
+  labels:
+    type: local
+    app: distributed-agent-team
+spec:
+  storageClassName: workspace-storage
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /data/workspace
+    type: DirectoryOrCreate
+---
+# PVC for dmz namespace (frontend)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: workspace-pvc
+  namespace: dmz
+spec:
+  storageClassName: workspace-storage
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  selector:
+    matchLabels:
+      type: local
+      app: distributed-agent-team
+---
+# PVC for agents namespace (backend workers)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: workspace-pvc
+  namespace: agents
+spec:
+  storageClassName: workspace-storage
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  selector:
+    matchLabels:
+      type: local
+      app: distributed-agent-team
+---
+# Alternative: Azure Files StorageClass for AKS production
+# Uncomment and use this instead of hostPath for production
+# apiVersion: storage.k8s.io/v1
+# kind: StorageClass
+# metadata:
+#   name: workspace-storage
+# provisioner: file.csi.azure.com
+# allowVolumeExpansion: true
+# parameters:
+#   skuName: Standard_LRS
+# reclaimPolicy: Retain
+# volumeBindingMode: Immediate
+# mountOptions:
+#   - dir_mode=0777
+#   - file_mode=0777
+#   - uid=1000
+#   - gid=1000

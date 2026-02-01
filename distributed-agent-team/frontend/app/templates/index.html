@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributed Agent Team</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #58a6ff;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            color: #8b949e;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #c9d1d9;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #8b949e;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        input[type="number"] {
+            width: 100px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #238636;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #2ea043;
+        }
+
+        .btn:disabled {
+            background-color: #21262d;
+            color: #8b949e;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: #21262d;
+            border: 1px solid #30363d;
+        }
+
+        .btn-secondary:hover {
+            background-color: #30363d;
+        }
+
+        #status {
+            margin-top: 20px;
+        }
+
+        .status-item {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .status-id {
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            color: #58a6ff;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-badge.initializing,
+        .status-badge.cloning,
+        .status-badge.creating_pods,
+        .status-badge.waiting_pods {
+            background-color: #1f6feb;
+            color: #ffffff;
+        }
+
+        .status-badge.running {
+            background-color: #f0883e;
+            color: #ffffff;
+        }
+
+        .status-badge.completed {
+            background-color: #238636;
+            color: #ffffff;
+        }
+
+        .status-badge.failed,
+        .status-badge.error {
+            background-color: #da3633;
+            color: #ffffff;
+        }
+
+        .status-message {
+            color: #8b949e;
+            font-size: 0.9rem;
+        }
+
+        .agents-list {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #30363d;
+        }
+
+        .agent-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.85rem;
+        }
+
+        .agent-name {
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            color: #c9d1d9;
+        }
+
+        .agent-branch {
+            color: #7ee787;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #30363d;
+            border-top-color: #58a6ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error-message {
+            color: #f85149;
+            background-color: rgba(248, 81, 73, 0.1);
+            border: 1px solid rgba(248, 81, 73, 0.4);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #30363d;
+            text-align: center;
+            color: #8b949e;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Distributed Agent Team</h1>
+        <p class="subtitle">Spawn parallel Claude agents to build software on separate git branches</p>
+
+        <div class="card">
+            <h2>New Run</h2>
+            <form id="startForm">
+                <div class="form-group">
+                    <label for="prompt">Task Description</label>
+                    <textarea id="prompt" name="prompt" placeholder="Describe what you want the agents to build..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="repo_url">Git Repository URL</label>
+                    <input type="text" id="repo_url" name="repo_url" placeholder="https://github.com/user/repo.git" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="agent_count">Number of Agents</label>
+                    <input type="number" id="agent_count" name="agent_count" value="3" min="1" max="10" required>
+                </div>
+
+                <button type="submit" class="btn" id="goBtn">Go</button>
+            </form>
+
+            <div id="formError" class="error-message hidden"></div>
+        </div>
+
+        <div class="card" id="statusCard">
+            <h2>Active Runs</h2>
+            <div id="status">
+                <p style="color: #8b949e; font-size: 0.9rem;">No active runs. Start a new run above.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Powered by Claude Agent SDK + Kubernetes</p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('startForm');
+        const goBtn = document.getElementById('goBtn');
+        const statusDiv = document.getElementById('status');
+        const formError = document.getElementById('formError');
+
+        // Track active runs for polling
+        const activeRuns = new Set();
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const prompt = document.getElementById('prompt').value.trim();
+            const repoUrl = document.getElementById('repo_url').value.trim();
+            const agentCount = parseInt(document.getElementById('agent_count').value, 10);
+
+            if (!prompt || !repoUrl) {
+                showError('Please fill in all required fields.');
+                return;
+            }
+
+            goBtn.disabled = true;
+            goBtn.textContent = 'Starting...';
+            hideError();
+
+            try {
+                const response = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        repo_url: repoUrl,
+                        agent_count: agentCount
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to start run');
+                }
+
+                // Start polling for this run
+                activeRuns.add(data.run_id);
+                startPolling();
+
+                // Clear the form
+                form.reset();
+                document.getElementById('agent_count').value = '3';
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                goBtn.disabled = false;
+                goBtn.textContent = 'Go';
+            }
+        });
+
+        function showError(message) {
+            formError.textContent = message;
+            formError.classList.remove('hidden');
+        }
+
+        function hideError() {
+            formError.classList.add('hidden');
+        }
+
+        let pollingInterval = null;
+
+        function startPolling() {
+            if (pollingInterval) return;
+
+            pollingInterval = setInterval(async () => {
+                await updateAllStatuses();
+            }, 2000);
+
+            // Also update immediately
+            updateAllStatuses();
+        }
+
+        async function updateAllStatuses() {
+            try {
+                const response = await fetch('/api/runs');
+                const data = await response.json();
+
+                if (data.runs && data.runs.length > 0) {
+                    renderStatuses(data.runs);
+
+                    // Check if any runs are still active
+                    const hasActiveRuns = data.runs.some(run =>
+                        !['completed', 'failed', 'cancelled'].includes(run.status)
+                    );
+
+                    if (!hasActiveRuns && pollingInterval) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                    }
+                } else {
+                    statusDiv.innerHTML = '<p style="color: #8b949e; font-size: 0.9rem;">No active runs. Start a new run above.</p>';
+                }
+
+            } catch (error) {
+                console.error('Failed to fetch statuses:', error);
+            }
+        }
+
+        function renderStatuses(runs) {
+            statusDiv.innerHTML = runs.map(run => `
+                <div class="status-item">
+                    <div class="status-header">
+                        <span class="status-id">Run: ${run.run_id}</span>
+                        <span class="status-badge ${run.status}">
+                            ${isActiveStatus(run.status) ? '<span class="spinner"></span>' : ''}
+                            ${run.status.replace('_', ' ')}
+                        </span>
+                    </div>
+                    <div class="status-message">${run.message}</div>
+                    ${renderAgents(run.agents)}
+                    ${run.error ? `<div class="error-message">${run.error}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function isActiveStatus(status) {
+            return ['initializing', 'cloning', 'creating_pods', 'waiting_pods', 'running'].includes(status);
+        }
+
+        function renderAgents(agents) {
+            if (!agents || agents.length === 0) return '';
+
+            return `
+                <div class="agents-list">
+                    ${agents.map(agent => `
+                        <div class="agent-item">
+                            <span class="agent-name">${agent.pod_name}</span>
+                            <span class="agent-branch">${agent.branch}</span>
+                            <span class="status-badge ${agent.status}">${agent.status}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Initial load
+        updateAllStatuses();
+    </script>
+</body>
+</html>
