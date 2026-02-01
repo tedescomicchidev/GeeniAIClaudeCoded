@@ -1,0 +1,42 @@
+# Frontend Service
+# Exposes the frontend application
+# Use LoadBalancer for cloud deployments, NodePort for minikube
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: dmz
+  labels:
+    app: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+  # For minikube: use NodePort
+  # For cloud (AKS/EKS/GKE): use LoadBalancer
+  type: LoadBalancer
+---
+# Alternative NodePort service for minikube
+# Apply this instead of the above for local development
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: frontend-nodeport
+#   namespace: dmz
+#   labels:
+#     app: frontend
+# spec:
+#   selector:
+#     app: frontend
+#   ports:
+#     - name: http
+#       port: 8000
+#       targetPort: 8000
+#       nodePort: 30080
+#       protocol: TCP
+#   type: NodePort

@@ -1,0 +1,89 @@
+# Squid Proxy Deployment
+# Provides domain-based egress filtering for agent pods
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: squid-proxy
+  namespace: proxy
+  labels:
+    app: squid-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: squid-proxy
+  template:
+    metadata:
+      labels:
+        app: squid-proxy
+    spec:
+      containers:
+        - name: squid
+          image: ubuntu/squid:latest
+          ports:
+            - containerPort: 3128
+              protocol: TCP
+          volumeMounts:
+            - name: squid-config
+              mountPath: /etc/squid/squid.conf
+              subPath: squid.conf
+            - name: squid-cache
+              mountPath: /var/spool/squid
+            - name: squid-logs
+              mountPath: /var/log/squid
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            tcpSocket:
+              port: 3128
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 3128
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          # Lifecycle hook to initialize cache directories
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    mkdir -p /var/spool/squid /var/log/squid /var/run/squid
+                    chown -R proxy:proxy /var/spool/squid /var/log/squid /var/run/squid
+                    squid -z 2>/dev/null || true
+      volumes:
+        - name: squid-config
+          configMap:
+            name: squid-config
+        - name: squid-cache
+          emptyDir: {}
+        - name: squid-logs
+          emptyDir: {}
+      # Ensure squid starts properly
+      initContainers:
+        - name: init-squid
+          image: ubuntu/squid:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              mkdir -p /var/spool/squid /var/log/squid /var/run/squid
+              chown -R proxy:proxy /var/spool/squid /var/log/squid /var/run/squid
+              squid -z -f /etc/squid/squid.conf 2>/dev/null || true
+          volumeMounts:
+            - name: squid-config
+              mountPath: /etc/squid/squid.conf
+              subPath: squid.conf
+            - name: squid-cache
+              mountPath: /var/spool/squid
+            - name: squid-logs
+              mountPath: /var/log/squid

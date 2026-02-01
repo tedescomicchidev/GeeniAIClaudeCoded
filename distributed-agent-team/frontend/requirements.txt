@@ -1,0 +1,26 @@
+# Distributed Agent Team Frontend Dependencies
+
+# Web framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Templates
+jinja2>=3.1.2
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Kubernetes client
+kubernetes>=29.0.0
+
+# HTTP client for health checks
+httpx>=0.26.0
+
+# Claude Agent SDK for MCP communication
+claude-agent-sdk>=0.1.0
+
+# Data validation
+pydantic>=2.5.0
+
+# Async support
+anyio>=4.2.0

@@ -1,0 +1,28 @@
+# Namespace definitions for distributed agent team
+# - dmz: Frontend application (Python/FastAPI + Claude Agent SDK)
+# - agents: Ephemeral backend agent pods (Claude CLI + Supergateway)
+# - proxy: Squid proxy for domain-based egress filtering
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dmz
+  labels:
+    name: dmz
+    purpose: frontend
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agents
+  labels:
+    name: agents
+    purpose: backend-workers
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: proxy
+  labels:
+    name: proxy
+    purpose: egress-filtering

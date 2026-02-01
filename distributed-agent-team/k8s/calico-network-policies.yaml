@@ -1,0 +1,196 @@
+# Calico Network Policies for Distributed Agent Team
+# These policies provide L3/L4 network isolation for agent pods
+# Domain-based (L7) filtering is handled by the Squid proxy
+#
+# Policy Summary:
+# 1. default-deny-egress-agents: Block all outbound by default
+# 2. allow-agents-to-proxy: Allow agents → Squid proxy (TCP 3128)
+# 3. allow-agents-to-frontend: Allow agents → frontend (TCP 8000)
+# 4. allow-agents-dns: Allow agents → kube-dns (UDP/TCP 53)
+# 5. default-deny-ingress-agents: Block all inbound by default
+# 6. allow-frontend-to-agents: Allow frontend → agents (TCP 8080)
+---
+# 1. Default deny ALL egress in agents namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress-agents
+  namespace: agents
+spec:
+  podSelector: {}  # Applies to all pods in namespace
+  policyTypes:
+    - Egress
+  egress: []  # Empty = deny all egress
+---
+# 2. Allow agent pods to reach the Squid proxy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-agents-to-proxy
+  namespace: agents
+spec:
+  podSelector:
+    matchLabels:
+      app: agent-worker
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: proxy
+          podSelector:
+            matchLabels:
+              app: squid-proxy
+      ports:
+        - protocol: TCP
+          port: 3128
+---
+# 3. Allow agent pods to reach the frontend (for callbacks)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-agents-to-frontend
+  namespace: agents
+spec:
+  podSelector:
+    matchLabels:
+      app: agent-worker
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: dmz
+          podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+# 4. Allow agent pods to reach kube-dns for DNS resolution
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-agents-dns
+  namespace: agents
+spec:
+  podSelector:
+    matchLabels:
+      app: agent-worker
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# 5. Default deny ALL ingress in agents namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress-agents
+  namespace: agents
+spec:
+  podSelector: {}  # Applies to all pods in namespace
+  policyTypes:
+    - Ingress
+  ingress: []  # Empty = deny all ingress
+---
+# 6. Allow frontend to reach agent pods (MCP over HTTP)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-to-agents
+  namespace: agents
+spec:
+  podSelector:
+    matchLabels:
+      app: agent-worker
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: dmz
+          podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# Additional policy: Allow proxy namespace to receive traffic from agents
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-agents-to-squid
+  namespace: proxy
+spec:
+  podSelector:
+    matchLabels:
+      app: squid-proxy
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: agents
+          podSelector:
+            matchLabels:
+              app: agent-worker
+      ports:
+        - protocol: TCP
+          port: 3128
+---
+# Policy for squid to reach external internet (egress)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-proxy-egress
+  namespace: proxy
+spec:
+  podSelector:
+    matchLabels:
+      app: squid-proxy
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow external HTTP/HTTPS (to any IP, filtered by Squid ACLs)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 22
