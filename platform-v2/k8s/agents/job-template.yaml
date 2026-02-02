@@ -1,0 +1,122 @@
+# Template for agent K8s Jobs
+# Variables: {{AGENT_ID}}, {{AGENT_ROLE}}, {{STORY_ID}}, {{SPRINT_ID}}, {{BRANCH_NAME}}, {{CLI_TOOL}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "agent-{{AGENT_ROLE}}-{{STORY_ID}}-{{SPRINT_ID}}"
+  namespace: agent-platform
+  labels:
+    app: multi-agent-platform
+    platform.type: agent
+    platform.role: "{{AGENT_ROLE}}"
+    platform.sprint: "{{SPRINT_ID}}"
+    platform.story: "{{STORY_ID}}"
+    platform.agent-id: "{{AGENT_ID}}"
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 3600    # 1 hour timeout
+  ttlSecondsAfterFinished: 3600  # Clean up completed jobs after 1 hour
+  template:
+    metadata:
+      labels:
+        app: multi-agent-platform
+        platform.type: agent
+        platform.role: "{{AGENT_ROLE}}"
+        platform.sprint: "{{SPRINT_ID}}"
+        platform.agent-id: "{{AGENT_ID}}"
+    spec:
+      restartPolicy: Never
+      serviceAccountName: agent-runner
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      volumes:
+        - name: repo-volume
+          persistentVolumeClaim:
+            claimName: "sprint-{{SPRINT_ID}}-repo"
+        - name: platform-state
+          persistentVolumeClaim:
+            claimName: "platform-state"
+        - name: prompts
+          configMap:
+            name: agent-prompts
+      containers:
+        - name: agent
+          image: "ghcr.io/platform/agent-runner:v2"
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+              ephemeral-storage: "10Gi"
+          env:
+            - name: AGENT_ROLE
+              value: "{{AGENT_ROLE}}"
+            - name: AGENT_ID
+              value: "{{AGENT_ID}}"
+            - name: STORY_ID
+              value: "{{STORY_ID}}"
+            - name: SPRINT_ID
+              value: "{{SPRINT_ID}}"
+            - name: BRANCH_NAME
+              value: "{{BRANCH_NAME}}"
+            - name: CLI_TOOL
+              value: "{{CLI_TOOL}}"
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agent-secrets
+                  key: anthropic-api-key
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: agent-secrets
+                  key: github-token
+            - name: HTTP_PROXY
+              value: "http://squid.agent-platform-proxy.svc.cluster.local:3128"
+            - name: HTTPS_PROXY
+              value: "http://squid.agent-platform-proxy.svc.cluster.local:3128"
+            - name: NO_PROXY
+              value: "localhost,127.0.0.1,.svc.cluster.local"
+          volumeMounts:
+            - name: repo-volume
+              mountPath: /workspace/repo
+            - name: platform-state
+              mountPath: /workspace/.platform
+            - name: prompts
+              mountPath: /workspace/prompts
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+---
+# Service Account for agents
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agent-runner
+  namespace: agent-platform
+---
+# ConfigMap for agent prompts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-prompts
+  namespace: agent-platform
+data:
+  # These are loaded from .platform/prompts/ at deploy time
+  pm-agent-prompt.md: |
+    # Placeholder - replaced by actual prompt at deployment
+  scrum-master-prompt.md: |
+    # Placeholder
+  developer-agent-prompt.md: |
+    # Placeholder
+  reviewer-agent-prompt.md: |
+    # Placeholder

@@ -1,0 +1,22 @@
+# Agent Registry - Tracks all agent pods and their status
+version: "1.0"
+last_updated: ""
+agents:
+  pm:
+    agent_id: ""
+    pod_name: ""
+    status: "inactive"            # inactive | running | completed | failed
+    started_at: null
+    completed_at: null
+  scrum_master:
+    agent_id: ""
+    pod_name: ""
+    status: "inactive"
+    started_at: null
+    completed_at: null
+  developers: []
+  reviewers: []
+active_count: 0
+total_spawned: 0
+total_completed: 0
+total_failed: 0

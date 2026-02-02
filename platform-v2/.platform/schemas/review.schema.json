@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://platform.dev/schemas/review.json",
+  "title": "Review Schema",
+  "description": "Schema for sprint reviews in the multi-agent platform",
+  "type": "object",
+  "required": ["id", "sprint_id", "status", "results"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^review-\\d{3,}$",
+      "description": "Unique review identifier"
+    },
+    "sprint_id": {
+      "type": "string",
+      "pattern": "^sprint-\\d{3,}$",
+      "description": "Associated sprint ID"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["in-progress", "completed"],
+      "description": "Review status"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Review start timestamp"
+    },
+    "completed_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Review completion timestamp"
+    },
+    "reviewer_agent_id": {
+      "type": "string",
+      "description": "Reviewer agent pod name"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["story_id", "status"],
+        "properties": {
+          "story_id": { "type": "string", "pattern": "^STORY-\\d{3,}$" },
+          "branch": { "type": "string" },
+          "status": { "type": "string", "enum": ["pass", "fail", "conflict"] },
+          "merged": { "type": "boolean" },
+          "merge_commit": { "type": ["string", "null"] },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string", "enum": ["code-quality", "security", "test-coverage", "ci-failure", "conflict"] },
+                "description": { "type": "string" },
+                "severity": { "type": "string", "enum": ["critical", "major", "minor"] }
+              }
+            }
+          },
+          "fix_stories_created": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^STORY-\\d{3,}$" }
+          }
+        }
+      },
+      "description": "Review results per story"
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total_stories": { "type": "integer" },
+        "passed": { "type": "integer" },
+        "failed": { "type": "integer" },
+        "conflicts": { "type": "integer" },
+        "fix_stories_created": { "type": "integer" }
+      }
+    }
+  }
+}

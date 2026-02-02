@@ -1,0 +1,120 @@
+# Squid proxy for domain-based egress filtering
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: squid
+  namespace: agent-platform-proxy
+  labels:
+    app: squid-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: squid-proxy
+  template:
+    metadata:
+      labels:
+        app: squid-proxy
+    spec:
+      containers:
+        - name: squid
+          image: ubuntu/squid:latest
+          ports:
+            - containerPort: 3128
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: squid-config
+              mountPath: /etc/squid/squid.conf
+              subPath: squid.conf
+      volumes:
+        - name: squid-config
+          configMap:
+            name: squid-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: squid
+  namespace: agent-platform-proxy
+spec:
+  selector:
+    app: squid-proxy
+  ports:
+    - port: 3128
+      targetPort: 3128
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: squid-config
+  namespace: agent-platform-proxy
+data:
+  squid.conf: |
+    # Squid configuration for agent egress filtering
+
+    # ACL definitions
+    acl localnet src 10.0.0.0/8
+    acl localnet src 172.16.0.0/12
+    acl localnet src 192.168.0.0/16
+
+    acl SSL_ports port 443
+    acl Safe_ports port 80
+    acl Safe_ports port 443
+    acl CONNECT method CONNECT
+
+    # Allowed domains for agent access
+    acl allowed_domains dstdomain .github.com
+    acl allowed_domains dstdomain .githubusercontent.com
+    acl allowed_domains dstdomain .anthropic.com
+    acl allowed_domains dstdomain .npmjs.org
+    acl allowed_domains dstdomain .npmjs.com
+    acl allowed_domains dstdomain registry.npmjs.org
+    acl allowed_domains dstdomain .pypi.org
+    acl allowed_domains dstdomain pypi.org
+    acl allowed_domains dstdomain files.pythonhosted.org
+    acl allowed_domains dstdomain .crates.io
+    acl allowed_domains dstdomain static.crates.io
+    acl allowed_domains dstdomain .rubygems.org
+    acl allowed_domains dstdomain .golang.org
+    acl allowed_domains dstdomain .go.dev
+    acl allowed_domains dstdomain proxy.golang.org
+    acl allowed_domains dstdomain .docker.io
+    acl allowed_domains dstdomain .docker.com
+    acl allowed_domains dstdomain registry-1.docker.io
+    acl allowed_domains dstdomain .azure.com
+    acl allowed_domains dstdomain .visualstudio.com
+    acl allowed_domains dstdomain dev.azure.com
+
+    # Access rules
+    http_access deny !Safe_ports
+    http_access deny CONNECT !SSL_ports
+    http_access allow localnet allowed_domains
+    http_access deny all
+
+    # Proxy settings
+    http_port 3128
+
+    # Cache settings (minimal for agents)
+    cache_mem 64 MB
+    maximum_object_size 10 MB
+    cache_dir ufs /var/spool/squid 100 16 256
+
+    # Logging
+    access_log daemon:/var/log/squid/access.log squid
+    cache_log /var/log/squid/cache.log
+
+    # Security
+    forwarded_for delete
+    via off
+
+    # Timeouts
+    connect_timeout 30 seconds
+    request_timeout 60 seconds
+    read_timeout 60 seconds

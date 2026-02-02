@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://platform.dev/schemas/story.json",
+  "title": "Story Schema",
+  "description": "Schema for user stories in the multi-agent platform",
+  "type": "object",
+  "required": ["id", "title", "description", "acceptance_criteria", "priority", "status"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^STORY-\\d{3,}$",
+      "description": "Unique story identifier (e.g., STORY-001)"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 200,
+      "description": "Brief story title"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 20,
+      "description": "Full story description in user story format"
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "List of testable acceptance criteria"
+    },
+    "story_points": {
+      "type": "integer",
+      "enum": [1, 2, 3, 5, 8],
+      "description": "Fibonacci story point estimate"
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Priority (1=highest, 10=lowest)"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["todo", "in-progress", "in-review", "done", "blocked"],
+      "description": "Current story status"
+    },
+    "sprint": {
+      "type": ["string", "null"],
+      "description": "Assigned sprint ID or null"
+    },
+    "branch": {
+      "type": ["string", "null"],
+      "description": "Git branch name when in-progress"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^STORY-\\d{3,}$" },
+      "description": "Story IDs that must be completed first"
+    },
+    "linked_stories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "relation"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^STORY-\\d{3,}$" },
+          "relation": { "type": "string", "enum": ["fix-for", "depends-on", "blocks", "child-of"] }
+        }
+      },
+      "description": "Related stories with relationship type"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Domain tags (backend, frontend, database, etc.)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 creation timestamp"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 last update timestamp"
+    },
+    "agent_assigned": {
+      "type": ["string", "null"],
+      "description": "Agent pod name when in-progress"
+    },
+    "result": {
+      "type": "object",
+      "properties": {
+        "status": { "type": ["string", "null"], "enum": ["pass", "fail", null] },
+        "pr_url": { "type": ["string", "null"] },
+        "review_notes": { "type": ["string", "null"] },
+        "failing_checks": { "type": "array", "items": { "type": "string" } }
+      },
+      "description": "Result after review"
+    }
+  }
+}
