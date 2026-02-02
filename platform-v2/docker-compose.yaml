@@ -1,0 +1,58 @@
+# Docker Compose for local development/testing
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PLATFORM_PATH=/workspace/.platform
+    volumes:
+      - platform-state:/workspace/.platform
+      - ./backend/src:/app/src:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "3002:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:3000
+      - NEXT_PUBLIC_WS_URL=ws://localhost:3001/ws/progress
+    depends_on:
+      - backend
+
+  # MCP servers (for local development without K8s)
+  mcp-agent-launcher:
+    build:
+      context: ./mcp-servers/agent-launcher
+      dockerfile: Dockerfile
+    environment:
+      - K8S_NAMESPACE=agent-platform
+      - PLATFORM_PATH=/workspace/.platform
+    volumes:
+      - platform-state:/workspace/.platform
+      - ~/.kube:/root/.kube:ro
+
+  mcp-progress-reporter:
+    build:
+      context: ./mcp-servers/progress-reporter
+      dockerfile: Dockerfile
+    environment:
+      - PROGRESS_WS_URL=ws://backend:3001/ws/progress
+
+volumes:
+  platform-state:
+    driver: local

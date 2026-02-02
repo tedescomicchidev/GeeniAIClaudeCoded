@@ -1,0 +1,34 @@
+# Persistent Volume for platform state (.platform/ directory)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: platform-state
+  namespace: agent-platform
+  labels:
+    app: multi-agent-platform
+    component: state
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard  # Adjust based on cloud provider
+---
+# Template for sprint-specific repository PVCs
+# This is created dynamically per sprint by the backend
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sprint-template-repo
+  namespace: agent-platform
+  labels:
+    app: multi-agent-platform
+    component: repo
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard

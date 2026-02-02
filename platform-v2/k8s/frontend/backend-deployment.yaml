@@ -1,0 +1,143 @@
+# Backend API deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-backend
+  namespace: agent-platform-dmz
+  labels:
+    app: platform-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: platform-backend
+  template:
+    metadata:
+      labels:
+        app: platform-backend
+    spec:
+      serviceAccountName: platform-backend
+      containers:
+        - name: backend
+          image: "ghcr.io/platform/backend:v2"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+            - name: websocket
+              containerPort: 3001
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: WS_PORT
+              value: "3001"
+            - name: K8S_NAMESPACE
+              value: "agent-platform"
+            - name: PLATFORM_PATH
+              value: "/workspace/.platform"
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agent-secrets
+                  key: anthropic-api-key
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: agent-secrets
+                  key: github-token
+          volumeMounts:
+            - name: platform-state
+              mountPath: /workspace/.platform
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: platform-state
+          persistentVolumeClaim:
+            claimName: platform-state-dmz
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: platform-backend
+  namespace: agent-platform-dmz
+spec:
+  selector:
+    app: platform-backend
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+    - name: websocket
+      port: 3001
+      targetPort: 3001
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: platform-backend
+  namespace: agent-platform-dmz
+---
+# RBAC for backend to manage agent pods
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent-manager
+  namespace: agent-platform
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "delete", "get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["create", "delete", "get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backend-agent-manager
+  namespace: agent-platform
+subjects:
+  - kind: ServiceAccount
+    name: platform-backend
+    namespace: agent-platform-dmz
+roleRef:
+  kind: Role
+  name: agent-manager
+  apiGroup: rbac.authorization.k8s.io
+---
+# PVC for DMZ to access platform state (read-only recommended in production)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: platform-state-dmz
+  namespace: agent-platform-dmz
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard

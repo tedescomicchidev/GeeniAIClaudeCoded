@@ -1,0 +1,30 @@
+platform:
+  version: "2.0"
+  name: "Multi-Agent Developer Platform"
+  cli: "claude-code"              # claude-code | github-copilot | codex
+  max_parallel_agents: 4
+  container_image: "ghcr.io/platform/agent-runner:latest"
+  kubernetes:
+    namespace: "agent-platform"
+    resource_limits:
+      cpu: "1"
+      memory: "2Gi"
+      disk: "10Gi"
+  state_backend: "local"          # "local" | "azure-devops"
+  azure_devops:
+    org: ""
+    project: ""
+    pat_secret: ""
+  cost_tracking:
+    enabled: true
+    alert_threshold_usd: 50.0
+    cumulative_limit_usd: 200.0
+  timeouts:
+    agent_heartbeat_seconds: 900  # 15 minutes
+    sprint_max_seconds: 3600      # 1 hour
+    story_max_seconds: 1800       # 30 minutes
+  models:
+    pm_agent: "opus"
+    scrum_master: "sonnet"
+    developer: "sonnet"
+    reviewer: "sonnet"

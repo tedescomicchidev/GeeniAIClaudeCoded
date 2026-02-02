@@ -1,0 +1,12 @@
+# Backlog Index - Ordered list of story IDs with priorities
+# This file is the source of truth for backlog ordering
+version: "1.0"
+last_updated: ""
+total_stories: 0
+stories_by_priority:
+  must_have: []     # Priority 1-3
+  should_have: []   # Priority 4-6
+  could_have: []    # Priority 7-9
+  wont_have: []     # Priority 10+
+critical_path: []   # Stories that block the most others
+next_sprint_candidates: []  # Stories ready for next sprint (no unmet dependencies)

@@ -1,0 +1,20 @@
+id: ""
+name: ""
+description: ""
+idea: ""
+repository:
+  url: ""
+  default_branch: "main"
+  clone_path: "/workspace/repo"
+created_at: ""
+updated_at: ""
+status: "initialized"              # initialized | planning | active | completed | failed
+current_sprint: null
+total_stories: 0
+completed_stories: 0
+total_cost_usd: 0.0
+constraints:
+  tech_stack: []
+  coding_standards: []
+  testing_requirements: []
+  deployment_target: ""

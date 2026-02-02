@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://platform.dev/schemas/sprint.json",
+  "title": "Sprint Schema",
+  "description": "Schema for sprints in the multi-agent platform",
+  "type": "object",
+  "required": ["id", "status", "stories"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^sprint-\\d{3,}$",
+      "description": "Unique sprint identifier"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["planning", "active", "in-review", "done"],
+      "description": "Current sprint status"
+    },
+    "goal": {
+      "type": "string",
+      "description": "Sprint goal description"
+    },
+    "stories": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^STORY-\\d{3,}$" },
+      "description": "Story IDs included in this sprint"
+    },
+    "started_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Sprint start timestamp"
+    },
+    "completed_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Sprint completion timestamp"
+    },
+    "agents_active": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of active agents"
+    },
+    "review_id": {
+      "type": ["string", "null"],
+      "description": "Linked review ID when sprint completes"
+    },
+    "cost_usd": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Total cost in USD for this sprint"
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "stories_completed": { "type": "integer" },
+        "stories_failed": { "type": "integer" },
+        "fix_stories_created": { "type": "integer" },
+        "total_commits": { "type": "integer" },
+        "lines_added": { "type": "integer" },
+        "lines_removed": { "type": "integer" }
+      }
+    }
+  }
+}

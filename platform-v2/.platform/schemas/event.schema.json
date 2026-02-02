@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://platform.dev/schemas/event.json",
+  "title": "Event Schema",
+  "description": "Schema for events in the event log",
+  "type": "object",
+  "required": ["ts", "type"],
+  "properties": {
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Event timestamp in ISO 8601 format"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "project.created",
+        "project.updated",
+        "project.completed",
+        "planning.started",
+        "planning.completed",
+        "planning.revised",
+        "sprint.planned",
+        "sprint.started",
+        "sprint.completed",
+        "sprint.failed",
+        "agent.spawned",
+        "agent.heartbeat",
+        "agent.completed",
+        "agent.failed",
+        "agent.timeout",
+        "agent.terminated",
+        "story.started",
+        "story.completed",
+        "story.failed",
+        "story.blocked",
+        "review.started",
+        "review.completed",
+        "merge.success",
+        "merge.conflict",
+        "ci.passed",
+        "ci.failed",
+        "cost.threshold",
+        "error"
+      ],
+      "description": "Event type"
+    },
+    "data": {
+      "type": "object",
+      "description": "Event-specific data payload"
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Agent that generated this event (if applicable)"
+    },
+    "sprint_id": {
+      "type": "string",
+      "description": "Associated sprint (if applicable)"
+    },
+    "story_id": {
+      "type": "string",
+      "description": "Associated story (if applicable)"
+    }
+  }
+}

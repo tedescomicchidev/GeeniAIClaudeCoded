@@ -1,0 +1,61 @@
+# Multi-Agent Platform - Agent Runner Container
+# This container runs developer, reviewer, scrum-master, and PM agents
+FROM node:20-bookworm
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    jq \
+    python3 \
+    python3-pip \
+    python3-venv \
+    sudo \
+    ca-certificates \
+    gnupg \
+    iptables \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Claude Code CLI
+RUN npm install -g @anthropic-ai/claude-code
+
+# Install additional development tools
+RUN npm install -g \
+    typescript \
+    ts-node \
+    tsx \
+    vitest \
+    eslint \
+    prettier
+
+# Create agent user
+RUN useradd -m -s /bin/bash -u 1000 agent && \
+    echo "agent ALL=(ALL) NOPASSWD: /usr/local/bin/init-firewall.sh" >> /etc/sudoers
+
+# Setup workspace
+RUN mkdir -p /workspace/repo /workspace/worktrees /workspace/.platform && \
+    chown -R agent:agent /workspace
+
+# Copy firewall initialization script
+COPY scripts/init-firewall.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/init-firewall.sh
+
+# Copy agent entrypoint script
+COPY scripts/agent-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/agent-entrypoint.sh
+
+# Set environment
+ENV HOME=/home/agent
+ENV WORKSPACE=/workspace
+ENV PLATFORM_PATH=/workspace/.platform
+
+# Switch to agent user
+USER agent
+WORKDIR /workspace
+
+# Configure git for agent
+RUN git config --global user.name "Agent" && \
+    git config --global user.email "agent@platform.local" && \
+    git config --global init.defaultBranch main
+
+ENTRYPOINT ["/usr/local/bin/agent-entrypoint.sh"]
